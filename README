@@ -1,0 +1,87 @@
+Encoding.com XML API Wrappers
+==============
+ 
+This plugin connects to the Encoding.com API for pay as you go cloud based video transcoding services.
+ 
+Requires a API Key and User ID from Encoding.com.  30day adn 1GB free trial available at www.encoding.com/signup
+ 
+Examples:
+
+	function sendRequest($xml)
+	{
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, "http://manage.encoding.com/");
+		curl_setopt($ch, CURLOPT_POSTFIELDS, "xml=" . urlencode($xml));
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		return curl_exec($ch);
+	}
+		 
+		// Begin processing User's POST
+	if(!empty($_POST['source']))
+	{
+	
+	  /* examples of POST
+	  		source='http://mylogin:mypassword@files.mybucket.s3.amazonaws.com/video/source/file_in.mov';
+	  		format['output']='flv';
+	  		format['size']='320x240';
+	  		format['bitrate']='256k';
+	  		format['audio_bitrate']='40k';
+	  		format['destination']='http://mylogin:mypassword@files.mybucket.s3.amazonaws.com/video/dest/file_out.flv';
+	  */
+		// Main fields
+		$req = new SimpleXMLElement('<?xml version="1.0"?><query></query>');
+		$req->addChild('userid', '777');
+		$req->addChild('userkey', '277e0d0sdfaaa9140a27c03419f5era');
+		$req->addChild('action', 'AddMedia');
+		$req->addChild('source', $_POST['source']);
+		 
+		$formatNode = $req->addChild('format');
+		// Format fields
+		foreach($_POST['format'] as $property => $value)
+		{
+			if ($value !== '')
+			$formatNode->addChild($property, $value);
+		}
+		 
+		// Sending API request
+		$res = sendRequest($req->asXML());
+		 
+		try
+		{
+		// Creating new object from response XML
+			$response = new SimpleXMLElement($res);
+		 
+		// If there are any errors, set error message
+			if(isset($response->errors[0]->error[0])) 
+			{
+				 $error = $response->errors[0]->error[0] . '';
+			}
+			else
+			if ($response->message[0]) 
+			{
+		// If message received, set OK message
+				$message = $response->message[0] . '';
+			}
+		}
+		catch(Exception $e)
+		{
+		// If wrong XML response received
+			$error = $e->getMessage();
+		}
+		 
+		// Displaying error if any
+		if (!empty($error)) 
+		{
+			echo '<div class="error">' . htmlspecialchars($error) . '</div>';
+		}
+	 
+		// Displaying message
+		if (!empty($message)) 
+		{
+			echo '<div class="message">' . htmlspecialchars($message) . '</div>';
+		}
+		exit;
+	}
+	
+Copyright (c) 2009 Encoding.com Inc. 
